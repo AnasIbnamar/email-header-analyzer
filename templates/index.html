@@ -19,6 +19,8 @@
             </svg>
             <span class="logo-text">HeaderScan</span>
         </div>
+        <a href="/history" class="nav-history-btn">Scan History</a>
+        <div class="nav-tag">v1.0 · Email Forensics</div>
     </nav>
 
     <main class="page-center">
@@ -35,8 +37,8 @@
                 </h1>
 
                 <p class="hero-desc">
-                    Paste raw headers to detect phishing, spoofing,
-                    and authentication failures — with a precise threat score.
+                    Paste raw headers or upload a .eml file to detect phishing,
+                    spoofing, and authentication failures — with a precise threat score.
                 </p>
 
                 <div class="feature-list">
@@ -46,7 +48,7 @@
                     </div>
                     <div class="feature-item">
                         <span class="fi-icon">✓</span>
-                        <span>IP geolocation of sending servers</span>
+                        <span>AbuseIPDB threat intelligence on all IPs</span>
                     </div>
                     <div class="feature-item">
                         <span class="fi-icon">✓</span>
@@ -55,6 +57,14 @@
                     <div class="feature-item">
                         <span class="fi-icon">✓</span>
                         <span>Full delivery chain visualization</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>.eml file upload with drag &amp; drop</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>Persistent scan history with PostgreSQL</span>
                     </div>
                 </div>
             </div>
@@ -73,12 +83,32 @@
                     {% endif %}
 
                     <div class="form-body">
-                        <form method="POST" action="/analyze">
-                            <textarea name="headers" placeholder="Paste email headers here..." rows="12" required></textarea>
+                        <form method="POST" action="/analyze" enctype="multipart/form-data">
+
+                            <div class="upload-zone" id="uploadZone">
+                                <div class="upload-icon">↑</div>
+                                <div class="upload-text">Drop a <strong>.eml file</strong> here</div>
+                                <div class="upload-sub">or click to browse</div>
+                                <input type="file" name="eml_file" id="emlFile" accept=".eml" class="upload-input">
+                                <div class="upload-filename" id="uploadFilename"></div>
+                            </div>
+
+                            <div class="divider">
+                                <span>or paste raw headers</span>
+                            </div>
+
+                            <textarea
+                                name="headers"
+                                placeholder="Paste email headers here..."
+                                rows="8"
+                                id="headerText"
+                            ></textarea>
+
                             <div class="form-hint">
                                 <strong>Gmail:</strong> three dots → Show original &nbsp;·&nbsp;
                                 <strong>Outlook:</strong> File → Properties → Internet headers
                             </div>
+
                             <button type="submit" class="scan-btn">
                                 Run Analysis <span class="btn-arrow">→</span>
                             </button>
@@ -89,5 +119,43 @@
 
         </div>
     </main>
+
+    <script>
+    const zone = document.getElementById('uploadZone');
+    const input = document.getElementById('emlFile');
+    const filename = document.getElementById('uploadFilename');
+    const textarea = document.getElementById('headerText');
+
+    input.addEventListener('change', () => {
+        if (input.files[0]) {
+            filename.textContent = input.files[0].name;
+            zone.classList.add('has-file');
+            textarea.placeholder = 'File selected — or paste headers to override';
+        }
+    });
+
+    zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('dragover');
+    });
+
+    zone.addEventListener('dragleave', () => {
+        zone.classList.remove('dragover');
+    });
+
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith('.eml')) {
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            filename.textContent = file.name;
+            zone.classList.add('has-file');
+        }
+    });
+    </script>
+
 </body>
 </html>

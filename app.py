@@ -14,9 +14,24 @@ def index():
 
 @app.route("/analyze", methods=["POST"])
 def analyze():
-    raw_headers = request.form.get("headers", "").strip()
+    raw_headers = ""
+
+    # Check if a .eml file was uploaded
+    if "eml_file" in request.files:
+        f = request.files["eml_file"]
+        if f and f.filename.endswith(".eml"):
+            raw_bytes = f.read()
+            try:
+                raw_headers = raw_bytes.decode("utf-8", errors="replace")
+            except Exception:
+                raw_headers = raw_bytes.decode("latin-1", errors="replace")
+
+    # Fall back to pasted headers if no file uploaded
     if not raw_headers:
-        return render_template("index.html", error="Please paste some email headers.")
+        raw_headers = request.form.get("headers", "").strip()
+
+    if not raw_headers:
+        return render_template("index.html", error="Please paste headers or upload a .eml file.")
 
     report = run_full_analysis(raw_headers)
     scan_id = save_scan(report)
