@@ -405,6 +405,75 @@ def calculate_risk_score(parsed, spf, dmarc, dkim, spoofing_warnings):
 
     return min(score, 100)   # Cap at 100
 
+def check_abuseipdb(ip):
+    """
+    Check an IP against AbuseIPDB's database of reported malicious IPs.
+    Free tier: 1000 checks/day.
+    """
+    result = {
+        "ip": ip,
+        "abuse_score": 0,
+        "total_reports": 0,
+        "country": None,
+        "isp": None,
+        "domain": None,
+        "is_tor": False,
+        "last_reported": None,
+        "verdict": "clean",
+        "status": "unchecked"
+    }
+
+    api_key = os.getenv("ABUSEIPDB_API_KEY")
+    if not api_key:
+        result["status"] = "no_api_key"
+        return result
+
+    try:
+        response = http_requests.get(
+            "https://api.abuseipdb.com/api/v2/check",
+            headers={
+                "Key": api_key,
+                "Accept": "application/json"
+            },
+            params={
+                "ipAddress": ip,
+                "maxAgeInDays": 90,
+                "verbose": True
+            },
+            timeout=8
+        )
+
+        if response.status_code == 200:
+            data = response.json().get("data", {})
+            score = data.get("abuseConfidenceScore", 0)
+
+            result["abuse_score"]   = score
+            result["total_reports"] = data.get("totalReports", 0)
+            result["country"]       = data.get("countryCode")
+            result["isp"]           = data.get("isp")
+            result["domain"]        = data.get("domain")
+            result["is_tor"]        = data.get("isTor", False)
+            result["last_reported"] = data.get("lastReportedAt")
+            result["status"]        = "success"
+
+            if score >= 80:
+                result["verdict"] = "malicious"
+            elif score >= 40:
+                result["verdict"] = "suspicious"
+            elif score >= 10:
+                result["verdict"] = "low_risk"
+            else:
+                result["verdict"] = "clean"
+
+        elif response.status_code == 429:
+            result["status"] = "rate_limited"
+        else:
+            result["status"] = f"api_error_{response.status_code}"
+
+    except Exception as e:
+        result["status"] = "unavailable"
+
+    return result
 
 def run_full_analysis(raw_headers):
     """
@@ -420,20 +489,21 @@ def run_full_analysis(raw_headers):
     dmarc = check_dmarc(from_domain)
     dkim  = check_dkim(parsed)
 
-    # Geolocate all external IPs found
+    # Geolocate AND threat-check all external IPs
     geo_results = []
-    for ip in parsed["all_ips"][:5]:    # Limit to 5 IPs to stay within free API limits
+    for ip in parsed["all_ips"][:5]:
         geo = geolocate_ip(ip)
+        geo["abuse"] = check_abuseipdb(ip)
         geo_results.append(geo)
 
     risk_score = calculate_risk_score(parsed, spf, dmarc, dkim, warnings)
 
     return {
-        "parsed":           parsed,
-        "spf":              spf,
-        "dmarc":            dmarc,
-        "dkim":             dkim,
-        "geo":              geo_results,
+        "parsed":            parsed,
+        "spf":               spf,
+        "dmarc":             dmarc,
+        "dkim":              dkim,
+        "geo":               geo_results,
         "spoofing_warnings": warnings,
-        "risk_score":       risk_score
+        "risk_score":        risk_score
     }
