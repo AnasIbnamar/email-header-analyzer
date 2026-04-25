@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scan History — HeaderScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="report-page">
+<div class="noise"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="logo-text">HeaderScan</span>
+    </div>
+
+    <div style="padding: 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+        <div class="score-label">Total Scans</div>
+        <div style="font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; margin-top: 0.5rem;">
+            {{ scans|length }}
+        </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">
+        <div style="font-size: 0.72rem; font-family: var(--mono); color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem;">Summary</div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">High Risk</span>
+            <span style="color: var(--red); font-weight: 600;">{{ scans | selectattr('verdict', 'equalto', 'HIGH RISK') | list | length }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">Suspicious</span>
+            <span style="color: var(--amber); font-weight: 600;">{{ scans | selectattr('verdict', 'equalto', 'SUSPICIOUS') | list | length }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">Clean</span>
+            <span style="color: var(--green); font-weight: 600;">{{ scans | selectattr('verdict', 'equalto', 'CLEAN') | list | length }}</span>
+        </div>
+    </div>
+
+    <a href="/" class="new-scan-btn" style="margin-top: auto;">+ New Scan</a>
+</aside>
+
+<main class="report-main">
+    <div class="report-topbar">
+        <div class="report-title">Scan History</div>
+        <div class="report-sub">All previous email header analyses</div>
+    </div>
+
+    {% if scans %}
+    <div class="history-table-wrap">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>From</th>
+                    <th>Score</th>
+                    <th>Verdict</th>
+                    <th>Malicious IPs</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for scan in scans %}
+                <tr class="history-row" onclick="window.location='/scan/{{ scan.id }}'">
+                    <td class="mono" style="color: var(--text3); white-space: nowrap;">{{ scan.scanned_at[:16] }}</td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ scan.subject or "No subject" }}
+                    </td>
+                    <td class="mono" style="color: var(--text2); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ scan.from_addr or "—" }}
+                    </td>
+                    <td>
+                        <span class="score-val
+                            {% if scan.risk_score >= 70 %}stat-red
+                            {% elif scan.risk_score >= 40 %}stat-amber
+                            {% else %}stat-green{% endif %}">
+                            {{ scan.risk_score }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="verdict-pill
+                            {% if scan.verdict == 'HIGH RISK' %}vp-high
+                            {% elif scan.verdict == 'SUSPICIOUS' %}vp-med
+                            {% else %}vp-low{% endif %}">
+                            {{ scan.verdict }}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        {% if scan.malicious_ips > 0 %}
+                        <span style="color: var(--red); font-weight: 600;">{{ scan.malicious_ips }}</span>
+                        {% else %}
+                        <span style="color: var(--text3);">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <form method="POST" action="/scan/{{ scan.id }}/delete"
+                              onsubmit="event.stopPropagation(); return confirm('Delete this scan?');">
+                            <button type="submit" class="del-btn">✕</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 4rem; color: var(--text3);">
+        <div style="font-size: 2rem; margin-bottom: 1rem;">📭</div>
+        <div style="font-size: 0.95rem;">No scans yet. <a href="/" style="color: var(--teal);">Analyze your first email →</a></div>
+    </div>
+    {% endif %}
+</main>
+</body>
+</html>
