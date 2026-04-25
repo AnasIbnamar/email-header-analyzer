@@ -1115,3 +1115,74 @@ body.report-page {
     white-space: pre;
     line-height: 1.6;
 }
+
+/* Provider Detection Banner */
+.provider-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.provider-high   { background: var(--red-dim);   border-color: rgba(255,77,106,0.25); }
+.provider-medium { background: var(--amber-dim); border-color: rgba(255,181,71,0.25); }
+.provider-low    { background: var(--green-dim); border-color: rgba(61,220,132,0.25); }
+.provider-neutral{ background: var(--bg2);       border-color: var(--border); }
+
+.provider-left { flex-shrink: 0; }
+
+.provider-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    margin-bottom: 0.2rem;
+}
+
+.provider-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: -0.01em;
+}
+
+.provider-right {
+    flex: 1;
+    min-width: 0;
+}
+
+.provider-type-badge {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text3);
+    margin-bottom: 0.25rem;
+}
+
+.provider-detail {
+    font-size: 0.82rem;
+    color: var(--text2);
+    line-height: 1.5;
+}
+
+.provider-risk-badge {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 0.3rem 0.8rem;
+    border-radius: 99px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.provider-risk-high   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.3); }
+.provider-risk-medium { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.3); }
+.provider-risk-low    { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
+.provider-risk-neutral{ background: var(--bg2);       color: var(--text2); border: 1px solid var(--border2); }

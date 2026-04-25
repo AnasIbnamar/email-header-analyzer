@@ -475,6 +475,125 @@ def check_abuseipdb(ip):
 
     return result
 
+def detect_email_provider(parsed):
+    """
+    Identify the email service or tool used to send the email.
+    Returns provider name, type, and a risk flag.
+    """
+    result = {
+        "name": "Unknown",
+        "type": "unknown",
+        "risk": "neutral",
+        "detail": ""
+    }
+
+    raw        = parsed.get("raw", "").lower()
+    x_mailer   = parsed.get("x_headers", {}).get("X-Mailer", "") or ""
+    received   = " ".join([h.get("raw", "") for h in parsed.get("received_chain", [])]).lower()
+    dkim_domain = None
+
+    # Check DKIM signing domain
+    dkim_match = re.search(r'd=([\w\.\-]+)', raw, re.IGNORECASE)
+    if dkim_match:
+        dkim_domain = dkim_match.group(1).lower()
+
+    x_mailer_lower = x_mailer.lower()
+
+    # --- Malicious / High Risk Tools ---
+    if "phpmailer" in x_mailer_lower:
+        result.update({
+            "name": "PHPMailer",
+            "type": "script",
+            "risk": "high",
+            "detail": "Open-source PHP library — heavily abused in phishing and spam campaigns"
+        })
+    elif "the bat" in x_mailer_lower:
+        result.update({
+            "name": "The Bat!",
+            "type": "client",
+            "risk": "medium",
+            "detail": "Desktop email client popular in Eastern Europe — uncommon for legitimate bulk mail"
+        })
+    elif "swiftmailer" in x_mailer_lower:
+        result.update({
+            "name": "SwiftMailer",
+            "type": "script",
+            "risk": "high",
+            "detail": "PHP mailing library — frequently used in spam infrastructure"
+        })
+    elif "sendgrid" in received or (dkim_domain and "sendgrid" in dkim_domain):
+        result.update({
+            "name": "SendGrid",
+            "type": "esp",
+            "risk": "low",
+            "detail": "Legitimate email delivery platform used by businesses"
+        })
+    elif "mailchimp" in received or (dkim_domain and "mailchimp" in dkim_domain):
+        result.update({
+            "name": "Mailchimp",
+            "type": "esp",
+            "risk": "low",
+            "detail": "Legitimate email marketing platform"
+        })
+    elif "amazonses" in received or (dkim_domain and "amazonses" in dkim_domain):
+        result.update({
+            "name": "Amazon SES",
+            "type": "esp",
+            "risk": "low",
+            "detail": "Amazon's email sending service — used by legitimate businesses"
+        })
+    elif "google" in received or (dkim_domain and "google" in dkim_domain) or "gmail" in received:
+        result.update({
+            "name": "Gmail / Google",
+            "type": "provider",
+            "risk": "low",
+            "detail": "Sent via Google's mail infrastructure"
+        })
+    elif "outlook" in received or "hotmail" in received or "microsoft" in received:
+        result.update({
+            "name": "Microsoft Outlook / Hotmail",
+            "type": "provider",
+            "risk": "low",
+            "detail": "Sent via Microsoft's mail infrastructure"
+        })
+    elif "yahoo" in received or (dkim_domain and "yahoo" in dkim_domain):
+        result.update({
+            "name": "Yahoo Mail",
+            "type": "provider",
+            "risk": "low",
+            "detail": "Sent via Yahoo's mail infrastructure"
+        })
+    elif "mailgun" in received or (dkim_domain and "mailgun" in dkim_domain):
+        result.update({
+            "name": "Mailgun",
+            "type": "esp",
+            "risk": "low",
+            "detail": "Transactional email API service"
+        })
+    elif "postfix" in received:
+        result.update({
+            "name": "Postfix",
+            "type": "mta",
+            "risk": "medium",
+            "detail": "Self-hosted mail server — could be legitimate or part of spam infrastructure"
+        })
+    elif "exim" in received:
+        result.update({
+            "name": "Exim",
+            "type": "mta",
+            "risk": "medium",
+            "detail": "Self-hosted mail server — common in web hosting environments"
+        })
+    elif x_mailer:
+        result.update({
+            "name": x_mailer,
+            "type": "client",
+            "risk": "neutral",
+            "detail": "Custom or uncommon mail client"
+        })
+
+    return result
+
 def run_full_analysis(raw_headers):
     """
     Master function — runs everything and returns one complete report dict.
@@ -488,6 +607,7 @@ def run_full_analysis(raw_headers):
     spf   = check_spf(from_domain)
     dmarc = check_dmarc(from_domain)
     dkim  = check_dkim(parsed)
+    provider = detect_email_provider(parsed)
 
     # Geolocate AND threat-check all external IPs
     geo_results = []
@@ -505,5 +625,6 @@ def run_full_analysis(raw_headers):
         "dkim":              dkim,
         "geo":               geo_results,
         "spoofing_warnings": warnings,
-        "risk_score":        risk_score
+        "risk_score":        risk_score,
+        "provider":          provider
     }

@@ -80,6 +80,25 @@
         </div>
         {% endif %}
 
+        <!-- Provider Detection -->
+        {% if report.provider and report.provider.name != 'Unknown' %}
+        <div class="provider-banner provider-{{ report.provider.risk }}">
+            <div class="provider-left">
+                <div class="provider-label">Sent via</div>
+                <div class="provider-name">{{ report.provider.name }}</div>
+            </div>
+            <div class="provider-right">
+                <div class="provider-type-badge">{{ report.provider.type }}</div>
+                <div class="provider-detail">{{ report.provider.detail }}</div>
+            </div>
+            <div class="provider-risk-badge provider-risk-{{ report.provider.risk }}">
+                {% if report.provider.risk == 'high' %}HIGH RISK SENDER
+                {% elif report.provider.risk == 'medium' %}SUSPICIOUS SENDER
+                {% else %}LEGITIMATE SENDER{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Identity -->
         <section class="report-section" id="identity">
             <div class="section-label">01 — Email Identity</div>
