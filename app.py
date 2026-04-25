@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from analyzer import run_full_analysis
 from database import init_db, save_scan, get_all_scans, get_scan_by_id, delete_scan
 import os
@@ -75,6 +75,103 @@ def test_abuse():
     except Exception as e:
         return f"ERROR: {str(e)}"
 
+@app.route("/api/analyze", methods=["POST"])
+def api_analyze():
+    """
+    REST API endpoint for email header analysis.
+    Accepts JSON: {"headers": "raw header string"}
+    Returns: full analysis report as JSON
+    """
+    # Accept both JSON and form data
+    if request.is_json:
+        data = request.get_json()
+        raw_headers = data.get("headers", "").strip()
+    else:
+        raw_headers = request.form.get("headers", "").strip()
+
+    if not raw_headers:
+        return jsonify({
+            "error": "Missing 'headers' field",
+            "usage": "POST /api/analyze with JSON body: {\"headers\": \"raw email headers\"}"
+        }), 400
+
+    try:
+        report = run_full_analysis(raw_headers)
+        scan_id = save_scan(report)
+
+        # Build clean API response
+        return jsonify({
+            "scan_id": scan_id,
+            "risk_score": report["risk_score"],
+            "verdict": "high_risk" if report["risk_score"] >= 70 else "suspicious" if report["risk_score"] >= 40 else "clean",
+            "subject": report["parsed"].get("subject", ""),
+            "from": report["parsed"].get("from", ""),
+            "spoofing_warnings": report["spoofing_warnings"],
+            "authentication": {
+                "spf": {
+                    "status": report["spf"]["status"],
+                    "verdict": report["spf"]["verdict"],
+                    "record": report["spf"]["record"]
+                },
+                "dmarc": {
+                    "status": report["dmarc"]["status"],
+                    "policy": report["dmarc"]["policy"],
+                    "verdict": report["dmarc"]["verdict"]
+                },
+                "dkim": {
+                    "present": report["dkim"]["present"],
+                    "domain": report["dkim"]["domain"]
+                }
+            },
+            "ip_reputation": [
+                {
+                    "ip": g["ip"],
+                    "country": g.get("country"),
+                    "city": g.get("city"),
+                    "isp": g.get("isp"),
+                    "abuse_score": g.get("abuse", {}).get("abuse_score", 0),
+                    "total_reports": g.get("abuse", {}).get("total_reports", 0),
+                    "verdict": g.get("abuse", {}).get("verdict", "unknown"),
+                    "is_tor": g.get("abuse", {}).get("is_tor", False)
+                }
+                for g in report["geo"]
+            ],
+            "delivery_chain": [
+                {
+                    "hop": i + 1,
+                    "from": hop["from_host"],
+                    "by": hop["by_host"],
+                    "ips": hop["ips"],
+                    "timestamp": hop["timestamp"]
+                }
+                for i, hop in enumerate(report["parsed"]["received_chain"])
+            ]
+        })
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/history", methods=["GET"])
+def api_history():
+    """Return scan history as JSON."""
+    scans = get_all_scans()
+    return jsonify({"scans": scans, "total": len(scans)})
+
+
+@app.route("/api/scan/<int:scan_id>", methods=["GET"])
+def api_get_scan(scan_id):
+    """Return a specific scan by ID as JSON."""
+    report = get_scan_by_id(scan_id)
+    if not report:
+        return jsonify({"error": "Scan not found"}), 404
+    return jsonify(report)
+
+
+@app.route("/api", methods=["GET"])
+def api_docs():
+    """API documentation page."""
+    return render_template("api_docs.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

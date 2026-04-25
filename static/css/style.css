@@ -1053,3 +1053,65 @@ body.report-page {
     color: var(--teal);
     border-color: rgba(0,229,195,0.4);
 }
+
+/* API Docs */
+.api-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.api-method-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.method-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    letter-spacing: 0.06em;
+}
+
+.method-post { background: var(--teal-dim); color: var(--teal); border: 1px solid rgba(0,229,195,0.3); }
+.method-get  { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
+
+.api-path {
+    font-size: 1rem;
+    color: var(--text);
+    font-weight: 500;
+}
+
+.api-desc {
+    font-size: 0.875rem;
+    color: var(--text2);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+}
+
+.api-section-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    margin: 1rem 0 0.5rem;
+}
+
+.code-block {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text2);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.6;
+}

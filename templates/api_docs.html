@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Docs — HeaderScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="report-page">
+<div class="noise"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="logo-text">HeaderScan</span>
+    </div>
+
+    <nav class="side-nav" style="margin-top: 1rem;">
+        <a href="#analyze" class="side-link">POST /api/analyze</a>
+        <a href="#history" class="side-link">GET /api/history</a>
+        <a href="#scan" class="side-link">GET /api/scan/:id</a>
+    </nav>
+
+    <a href="/" class="new-scan-btn" style="margin-top: auto;">← Back to App</a>
+</aside>
+
+<main class="report-main">
+    <div class="report-topbar">
+        <div class="report-title">API Reference</div>
+        <div class="report-sub">Base URL: {{ request.host_url }}api</div>
+    </div>
+
+    <!-- Analyze endpoint -->
+    <section class="report-section" id="analyze">
+        <div class="section-label">01 — Analyze Headers</div>
+        <div class="api-card">
+            <div class="api-method-row">
+                <span class="method-badge method-post">POST</span>
+                <span class="api-path mono">/api/analyze</span>
+            </div>
+            <p class="api-desc">Analyze raw email headers and return a full threat report with SPF/DKIM/DMARC validation, IP reputation, and risk score.</p>
+
+            <div class="api-section-title">Request Body</div>
+            <pre class="code-block">{
+  "headers": "Received: from mail.example.com...\nFrom: sender@example.com\n..."
+}</pre>
+
+            <div class="api-section-title">Example — cURL</div>
+            <pre class="code-block">curl -X POST {{ request.host_url }}api/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"headers": "From: test@example.com\nSubject: Hello"}'</pre>
+
+            <div class="api-section-title">Example — Python</div>
+            <pre class="code-block">import requests
+
+headers = """From: attacker@evil.com
+Reply-To: harvest@phish.ru
+Subject: Urgent action required"""
+
+response = requests.post(
+    "{{ request.host_url }}api/analyze",
+    json={"headers": headers}
+)
+print(response.json())</pre>
+
+            <div class="api-section-title">Response</div>
+            <pre class="code-block">{
+  "scan_id": 42,
+  "risk_score": 75,
+  "verdict": "high_risk",
+  "subject": "Urgent action required",
+  "from": "attacker@evil.com",
+  "spoofing_warnings": [
+    "Reply-To domain (phish.ru) differs from From domain (evil.com)"
+  ],
+  "authentication": {
+    "spf": { "status": "domain_not_found", "verdict": "neutral", "record": null },
+    "dmarc": { "status": "domain_not_found", "policy": null, "verdict": "none" },
+    "dkim": { "present": false, "domain": null }
+  },
+  "ip_reputation": [
+    {
+      "ip": "185.220.101.34",
+      "country": "DE",
+      "city": "Brandenburg",
+      "isp": "Network for Tor-Exit traffic.",
+      "abuse_score": 100,
+      "total_reports": 121,
+      "verdict": "malicious",
+      "is_tor": true
+    }
+  ],
+  "delivery_chain": [
+    {
+      "hop": 1,
+      "from": "mail.evil.com",
+      "by": "mx.google.com",
+      "ips": ["185.220.101.34"],
+      "timestamp": "Sat, 25 Apr 2026 18:00:01 +0000"
+    }
+  ]
+}</pre>
+        </div>
+    </section>
+
+    <!-- History endpoint -->
+    <section class="report-section" id="history">
+        <div class="section-label">02 — Scan History</div>
+        <div class="api-card">
+            <div class="api-method-row">
+                <span class="method-badge method-get">GET</span>
+                <span class="api-path mono">/api/history</span>
+            </div>
+            <p class="api-desc">Returns all previous scan results ordered by most recent first. Maximum 100 results.</p>
+
+            <div class="api-section-title">Example — cURL</div>
+            <pre class="code-block">curl {{ request.host_url }}api/history</pre>
+
+            <div class="api-section-title">Response</div>
+            <pre class="code-block">{
+  "total": 2,
+  "scans": [
+    {
+      "id": 2,
+      "scanned_at": "2026-04-25 22:12:00",
+      "subject": "Your Microsoft account...",
+      "from_addr": "Microsoft Account Team...",
+      "risk_score": 80,
+      "verdict": "HIGH RISK",
+      "malicious_ips": 1,
+      "warnings": 1
+    }
+  ]
+}</pre>
+        </div>
+    </section>
+
+    <!-- Get scan endpoint -->
+    <section class="report-section" id="scan">
+        <div class="section-label">03 — Get Scan by ID</div>
+        <div class="api-card">
+            <div class="api-method-row">
+                <span class="method-badge method-get">GET</span>
+                <span class="api-path mono">/api/scan/:id</span>
+            </div>
+            <p class="api-desc">Returns the full report JSON for a specific scan by its ID.</p>
+
+            <div class="api-section-title">Example — cURL</div>
+            <pre class="code-block">curl {{ request.host_url }}api/scan/1</pre>
+
+            <div class="api-section-title">Error Response</div>
+            <pre class="code-block">{ "error": "Scan not found" }</pre>
+        </div>
+    </section>
+
+    <!-- Live tester -->
+    <section class="report-section">
+        <div class="section-label">04 — Live API Tester</div>
+        <div class="api-card">
+            <p class="api-desc">Test the API directly from your browser.</p>
+            <textarea id="apiInput" rows="6" placeholder="Paste email headers here..." style="width:100%; margin-bottom: 0.75rem;"></textarea>
+            <button onclick="testApi()" class="scan-btn" style="width: auto; padding: 0.7rem 1.5rem;">
+                Send Request →
+            </button>
+            <pre class="code-block" id="apiOutput" style="margin-top: 1rem; min-height: 60px; color: var(--teal);">
+— response will appear here —</pre>
+        </div>
+    </section>
+
+</main>
+
+<script>
+async function testApi() {
+    const headers = document.getElementById('apiInput').value.trim();
+    const output = document.getElementById('apiOutput');
+
+    if (!headers) {
+        output.textContent = '{ "error": "Please paste some headers first" }';
+        return;
+    }
+
+    output.textContent = 'Sending request...';
+
+    try {
+        const response = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ headers })
+        });
+        const data = await response.json();
+        output.textContent = JSON.stringify(data, null, 2);
+    } catch (e) {
+        output.textContent = `Error: ${e.message}`;
+    }
+}
+</script>
+</body>
+</html>

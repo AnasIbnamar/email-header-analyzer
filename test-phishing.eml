@@ -1,0 +1,29 @@
+MIME-Version: 1.0
+Date: Thu, 23 Apr 2026 14:32:11 +0000
+Message-ID: <20260423143211.HACK456@dropbox-secure-alert.com>
+Subject: Your Dropbox storage is full — action required
+From: "Dropbox Team" <no-reply@dropbox-secure-alert.com>
+Reply-To: steal-creds@mail2tor.com
+To: anas.ibnamar@uir.ac.ma
+Return-Path: <bounce@dropbox-secure-alert.com>
+Received: from mail.dropbox-secure-alert.com (mail.dropbox-secure-alert.com [193.32.161.50])
+        by mx.uir.ac.ma with ESMTP id z99si1234567abc
+        for <anas.ibnamar@uir.ac.ma>;
+        Thu, 23 Apr 2026 14:32:15 +0000
+Received: from smtp-bulk.darknet-mailer.ru (smtp-bulk.darknet-mailer.ru [91.108.4.100])
+        by mail.dropbox-secure-alert.com with ESMTP id m44si9876543xyz;
+        Thu, 23 Apr 2026 14:32:08 +0000
+Received: from origin.phish-kit.cn (unknown [45.142.212.200])
+        by smtp-bulk.darknet-mailer.ru with ESMTP;
+        Thu, 23 Apr 2026 14:31:55 +0000
+X-Mailer: PHPMailer 6.2.0
+X-Spam-Status: Yes, score=9.6 required=5.0
+X-Originating-IP: 45.142.212.200
+X-PHP-Originating-Script: 31337:phish_dropbox.php
+X-Priority: 1 (Highest)
+Content-Type: text/html; charset=UTF-8
+
+<html><body>
+<p>Your Dropbox account is full. Click here to upgrade your storage immediately.</p>
+<a href="http://dropbox-secure-alert.com/steal?victim=anas">Upgrade Now</a>
+</body></html>
