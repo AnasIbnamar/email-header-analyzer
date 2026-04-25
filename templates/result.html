@@ -11,10 +11,11 @@
 <body class="report-page">
     <div class="noise"></div>
 
-    <!-- Sidebar -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <span class="logo-icon">⬡</span>
+            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+            </svg>
             <span class="logo-text">HeaderScan</span>
         </div>
 
@@ -58,7 +59,6 @@
         <a href="/" class="new-scan-btn">← New Scan</a>
     </aside>
 
-    <!-- Main content -->
     <main class="report-main">
 
         <div class="report-topbar">
@@ -66,9 +66,11 @@
                 <div class="report-title">Threat Analysis Report</div>
                 <div class="report-sub">{{ report.parsed.subject or "No subject" }}</div>
             </div>
+            {% if scan_id %}
+            <a href="/scan/{{ scan_id }}/pdf" class="pdf-btn">↓ Download PDF</a>
+            {% endif %}
         </div>
 
-        <!-- Warnings -->
         {% if report.spoofing_warnings %}
         <div class="warnings-block">
             {% for w in report.spoofing_warnings %}
@@ -80,7 +82,6 @@
         </div>
         {% endif %}
 
-        <!-- Provider Detection -->
         {% if report.provider and report.provider.name != 'Unknown' %}
         <div class="provider-banner provider-{{ report.provider.risk }}">
             <div class="provider-left">
@@ -99,7 +100,6 @@
         </div>
         {% endif %}
 
-        <!-- Identity -->
         <section class="report-section" id="identity">
             <div class="section-label">01 — Email Identity</div>
             <div class="identity-grid">
@@ -132,7 +132,6 @@
             </div>
         </section>
 
-        <!-- Authentication -->
         <section class="report-section" id="auth">
             <div class="section-label">02 — Authentication</div>
             <div class="auth-trio">
@@ -193,7 +192,6 @@
             </div>
         </section>
 
-        <!-- Delivery Chain -->
         {% if report.parsed.received_chain %}
         <section class="report-section" id="chain">
             <div class="section-label">03 — Delivery Chain</div>
@@ -230,7 +228,6 @@
         </section>
         {% endif %}
 
-<!-- Geolocation -->
         {% if report.geo %}
         <section class="report-section" id="geo">
             <div class="section-label">04 — IP Reputation & Geolocation</div>
@@ -297,7 +294,6 @@
         </section>
         {% endif %}
 
-        <!-- X-Headers -->
         {% if report.parsed.x_headers %}
         <section class="report-section" id="xheaders">
             <div class="section-label">05 — Custom Headers</div>

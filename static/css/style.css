@@ -1186,3 +1186,26 @@ body.report-page {
 .provider-risk-medium { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.3); }
 .provider-risk-low    { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
 .provider-risk-neutral{ background: var(--bg2);       color: var(--text2); border: 1px solid var(--border2); }
+
+/* PDF Download Button */
+.pdf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--teal-dim);
+    color: var(--teal);
+    border: 1px solid rgba(0,229,195,0.3);
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+    font-family: var(--sans);
+}
+
+.pdf-btn:hover {
+    background: var(--teal);
+    color: var(--bg);
+}
