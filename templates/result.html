@@ -49,6 +49,7 @@
 
         <nav class="side-nav">
             <a href="/history" class="side-link">← History</a>
+            <a href="#ml" class="side-link">ML Prediction</a>
             <a href="#identity" class="side-link">Identity</a>
             <a href="#auth" class="side-link">Authentication</a>
             <a href="#chain" class="side-link">Delivery Chain</a>
@@ -97,6 +98,46 @@
                 {% if report.provider.risk == 'high' %}HIGH RISK SENDER
                 {% elif report.provider.risk == 'medium' %}SUSPICIOUS SENDER
                 {% else %}LEGITIMATE SENDER{% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ML Risk Score -->
+        {% if report.ml %}
+        <div class="ml-banner" id="ml">
+            <div class="ml-left">
+                <div class="ml-label">ML Model Prediction</div>
+                <div class="ml-verdict ml-verdict-{{ report.ml.verdict }}">
+                    {{ report.ml.verdict | upper }}
+                </div>
+            </div>
+            <div class="ml-bars">
+                <div class="ml-bar-row">
+                    <span class="ml-bar-lbl">Clean</span>
+                    <div class="ml-bar-track">
+                        <div class="ml-bar-fill ml-bar-clean" style="width: {{ report.ml.probabilities.clean }}%"></div>
+                    </div>
+                    <span class="ml-bar-pct">{{ report.ml.probabilities.clean }}%</span>
+                </div>
+                <div class="ml-bar-row">
+                    <span class="ml-bar-lbl">Suspicious</span>
+                    <div class="ml-bar-track">
+                        <div class="ml-bar-fill ml-bar-suspicious" style="width: {{ report.ml.probabilities.suspicious }}%"></div>
+                    </div>
+                    <span class="ml-bar-pct">{{ report.ml.probabilities.suspicious }}%</span>
+                </div>
+                <div class="ml-bar-row">
+                    <span class="ml-bar-lbl">Malicious</span>
+                    <div class="ml-bar-track">
+                        <div class="ml-bar-fill ml-bar-malicious" style="width: {{ report.ml.probabilities.malicious }}%"></div>
+                    </div>
+                    <span class="ml-bar-pct">{{ report.ml.probabilities.malicious }}%</span>
+                </div>
+            </div>
+            <div class="ml-right">
+                <div class="ml-score-num ml-score-{{ report.ml.verdict }}">{{ report.ml.ml_score }}</div>
+                <div class="ml-score-lbl">ML Score</div>
+                <div class="ml-confidence">{{ report.ml.confidence }}% confidence</div>
             </div>
         </div>
         {% endif %}
@@ -228,7 +269,6 @@
             </div>
         </section>
 
-        <!-- Delivery Chain Graph -->
         <section class="report-section" id="graph">
             <div class="section-label">03b — Delivery Path Visualization</div>
             <div class="graph-wrap">

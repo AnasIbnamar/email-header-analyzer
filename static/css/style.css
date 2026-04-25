@@ -1285,3 +1285,112 @@ body.report-page {
     font-size: 0.8rem;
     color: var(--text3);
 }
+
+/* ML Score Banner */
+.ml-banner {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.ml-left { flex-shrink: 0; min-width: 120px; }
+
+.ml-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    margin-bottom: 0.5rem;
+}
+
+.ml-verdict {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+    display: inline-block;
+}
+
+.ml-verdict-malicious  { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.3); }
+.ml-verdict-suspicious { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.3); }
+.ml-verdict-clean      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
+.ml-verdict-unknown    { background: var(--bg3);       color: var(--text3); border: 1px solid var(--border); }
+
+.ml-bars { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 0.5rem; }
+
+.ml-bar-row {
+    display: grid;
+    grid-template-columns: 72px 1fr 44px;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.ml-bar-lbl {
+    font-size: 0.72rem;
+    color: var(--text2);
+    text-align: right;
+}
+
+.ml-bar-track {
+    height: 6px;
+    background: var(--bg3);
+    border-radius: 99px;
+    overflow: hidden;
+}
+
+.ml-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1s ease;
+}
+
+.ml-bar-clean      { background: var(--green); }
+.ml-bar-suspicious { background: var(--amber); }
+.ml-bar-malicious  { background: var(--red); }
+
+.ml-bar-pct {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text3);
+}
+
+.ml-right {
+    text-align: center;
+    flex-shrink: 0;
+    min-width: 80px;
+}
+
+.ml-score-num {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+}
+
+.ml-score-malicious  { color: var(--red); }
+.ml-score-suspicious { color: var(--amber); }
+.ml-score-clean      { color: var(--green); }
+.ml-score-unknown    { color: var(--text3); }
+
+.ml-score-lbl {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+}
+
+.ml-confidence {
+    font-size: 0.72rem;
+    color: var(--text3);
+    margin-top: 0.3rem;
+}

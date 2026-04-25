@@ -4,6 +4,7 @@ from email import policy
 from email.header import decode_header as _decode_header
 import dns.resolver
 import requests as http_requests
+from ml_model import predict_risk
 import os
 from dotenv import load_dotenv
 load_dotenv()
@@ -618,6 +619,15 @@ def run_full_analysis(raw_headers):
 
     risk_score = calculate_risk_score(parsed, spf, dmarc, dkim, warnings)
 
+    ml = predict_risk({
+        "spf": spf, "dmarc": dmarc, "dkim": dkim,
+        "spoofing_warnings": warnings,
+        "geo": geo_results,
+        "provider": provider,
+        "parsed": parsed,
+        "risk_score": risk_score
+    })
+
     return {
         "parsed":            parsed,
         "spf":               spf,
@@ -626,5 +636,6 @@ def run_full_analysis(raw_headers):
         "geo":               geo_results,
         "spoofing_warnings": warnings,
         "risk_score":        risk_score,
-        "provider":          provider
+        "provider":          provider,
+        "ml":                ml
     }
