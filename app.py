@@ -22,3 +22,11 @@ def analyze():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+@app.route("/test-api")
+def test_api():
+    import os
+    key = os.getenv("ABUSEIPDB_API_KEY")
+    if key:
+        return f"Key found: {key[:8]}..."
+    return "No key found"

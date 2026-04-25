@@ -4,7 +4,9 @@ from email import policy
 from email.header import decode_header as _decode_header
 import dns.resolver
 import requests as http_requests
-
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 def parse_headers(raw_headers):
     """
