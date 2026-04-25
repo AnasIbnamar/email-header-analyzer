@@ -1,6 +1,8 @@
 import re
 import email
 from email import policy
+import dns.resolver
+import requests as http_requests
 
 
 def parse_headers(raw_headers):
@@ -178,3 +180,235 @@ def extract_domain(email_str):
         return None
     match = re.search(r'@([\w\.\-]+)', email_str)
     return match.group(1) if match else None
+
+
+def check_spf(domain):
+    """
+    Look up the SPF record for a domain via DNS TXT records.
+    SPF tells us which servers are allowed to send email for that domain.
+    """
+    result = {
+        "domain": domain,
+        "record": None,
+        "status": "not_found",
+        "verdict": "neutral"
+    }
+
+    if not domain:
+        result["status"] = "no_domain"
+        return result
+
+    try:
+        answers = dns.resolver.resolve(domain, "TXT")
+        for rdata in answers:
+            txt = rdata.to_text().strip('"')
+            if txt.startswith("v=spf1"):
+                result["record"] = txt
+                result["status"] = "found"
+
+                # Basic verdict from the SPF record's ending mechanism
+                if "-all" in txt:
+                    result["verdict"] = "strict"       # Hard fail — domain enforces SPF
+                elif "~all" in txt:
+                    result["verdict"] = "soft_fail"    # Soft fail — likely phishing risk
+                elif "?all" in txt:
+                    result["verdict"] = "neutral"
+                elif "+all" in txt:
+                    result["verdict"] = "dangerous"    # Anyone can send — big red flag
+                break
+
+    except dns.resolver.NXDOMAIN:
+        result["status"] = "domain_not_found"
+    except dns.resolver.NoAnswer:
+        result["status"] = "no_spf_record"
+    except Exception as e:
+        result["status"] = f"error: {str(e)}"
+
+    return result
+
+
+def check_dmarc(domain):
+    """
+    Look up the DMARC record for a domain.
+    DMARC builds on SPF and DKIM — it tells receivers what to do with failing mail.
+    """
+    result = {
+        "domain": domain,
+        "record": None,
+        "status": "not_found",
+        "policy": None,
+        "verdict": "none"
+    }
+
+    if not domain:
+        result["status"] = "no_domain"
+        return result
+
+    try:
+        dmarc_domain = f"_dmarc.{domain}"
+        answers = dns.resolver.resolve(dmarc_domain, "TXT")
+        for rdata in answers:
+            txt = rdata.to_text().strip('"')
+            if txt.startswith("v=DMARC1"):
+                result["record"] = txt
+                result["status"] = "found"
+
+                # Extract the policy (p=none / p=quarantine / p=reject)
+                policy_match = re.search(r'p=(\w+)', txt)
+                if policy_match:
+                    policy = policy_match.group(1).lower()
+                    result["policy"] = policy
+
+                    if policy == "reject":
+                        result["verdict"] = "strict"       # Strongest protection
+                    elif policy == "quarantine":
+                        result["verdict"] = "moderate"     # Goes to spam
+                    elif policy == "none":
+                        result["verdict"] = "weak"         # Monitoring only — not enforced
+                break
+
+    except dns.resolver.NXDOMAIN:
+        result["status"] = "domain_not_found"
+    except dns.resolver.NoAnswer:
+        result["status"] = "no_dmarc_record"
+    except Exception as e:
+        result["status"] = f"error: {str(e)}"
+
+    return result
+
+
+def check_dkim(parsed_headers):
+    """
+    Check for DKIM-Signature header presence.
+    Full cryptographic verification requires the private key — we check existence
+    and extract the signing domain (d= tag) for display.
+    """
+    result = {
+        "present": False,
+        "domain": None,
+        "selector": None,
+        "verdict": "missing"
+    }
+
+    raw = parsed_headers.get("raw", "")
+    dkim_match = re.search(r'DKIM-Signature:.*?(?=\n\S|\Z)', raw,
+                           re.IGNORECASE | re.DOTALL)
+
+    if dkim_match:
+        result["present"] = True
+        result["verdict"] = "present"
+        dkim_text = dkim_match.group(0)
+
+        # Extract signing domain
+        d_match = re.search(r'\bd=([^\s;]+)', dkim_text)
+        if d_match:
+            result["domain"] = d_match.group(1)
+
+        # Extract selector
+        s_match = re.search(r'\bs=([^\s;]+)', dkim_text)
+        if s_match:
+            result["selector"] = s_match.group(1)
+
+    return result
+
+
+def geolocate_ip(ip):
+    """
+    Use the free ip-api.com service to geolocate an IP address.
+    No API key required. Returns country, city, ISP, and org.
+    """
+    result = {
+        "ip": ip,
+        "country": None,
+        "city": None,
+        "isp": None,
+        "org": None,
+        "status": "unknown"
+    }
+
+    try:
+        response = http_requests.get(
+            f"http://ip-api.com/json/{ip}",
+            timeout=5
+        )
+        data = response.json()
+
+        if data.get("status") == "success":
+            result["country"] = data.get("country")
+            result["city"]    = data.get("city")
+            result["isp"]     = data.get("isp")
+            result["org"]     = data.get("org")
+            result["status"]  = "success"
+        else:
+            result["status"] = data.get("message", "failed")
+
+    except Exception as e:
+        result["status"] = f"error: {str(e)}"
+
+    return result
+
+
+def calculate_risk_score(parsed, spf, dmarc, dkim, spoofing_warnings):
+    """
+    Calculate an overall risk score from 0 (safe) to 100 (dangerous).
+    This is what makes the tool impressive — a single clear number.
+    """
+    score = 0
+
+    # SPF scoring
+    if spf["status"] in ("not_found", "no_spf_record"):
+        score += 25
+    elif spf["verdict"] == "dangerous":   # +all
+        score += 35
+    elif spf["verdict"] == "soft_fail":
+        score += 15
+
+    # DMARC scoring
+    if dmarc["status"] in ("not_found", "no_dmarc_record"):
+        score += 25
+    elif dmarc["verdict"] == "weak":      # p=none
+        score += 15
+    elif dmarc["verdict"] == "moderate":  # p=quarantine
+        score += 5
+
+    # DKIM scoring
+    if not dkim["present"]:
+        score += 20
+
+    # Spoofing indicators
+    score += len(spoofing_warnings) * 10
+
+    return min(score, 100)   # Cap at 100
+
+
+def run_full_analysis(raw_headers):
+    """
+    Master function — runs everything and returns one complete report dict.
+    This is the only function Flask needs to call.
+    """
+    parsed   = parse_headers(raw_headers)
+    warnings = detect_spoofing_indicators(parsed)
+
+    from_domain = extract_domain(parsed.get("from", "") or "")
+
+    spf   = check_spf(from_domain)
+    dmarc = check_dmarc(from_domain)
+    dkim  = check_dkim(parsed)
+
+    # Geolocate all external IPs found
+    geo_results = []
+    for ip in parsed["all_ips"][:5]:    # Limit to 5 IPs to stay within free API limits
+        geo = geolocate_ip(ip)
+        geo_results.append(geo)
+
+    risk_score = calculate_risk_score(parsed, spf, dmarc, dkim, warnings)
+
+    return {
+        "parsed":           parsed,
+        "spf":              spf,
+        "dmarc":            dmarc,
+        "dkim":             dkim,
+        "geo":              geo_results,
+        "spoofing_warnings": warnings,
+        "risk_score":       risk_score
+    }
