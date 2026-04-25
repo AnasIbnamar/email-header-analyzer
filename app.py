@@ -323,6 +323,52 @@ def api_get_scan(scan_id):
 def api_docs():
     return render_template("api_docs.html")
 
+@app.route("/bulk", methods=["GET"])
+def bulk():
+    return render_template("bulk.html")
+
+
+@app.route("/bulk/analyze", methods=["POST"])
+def bulk_analyze():
+    results = []
+
+    # Handle multiple pasted header blocks separated by "---"
+    raw_input = request.form.get("bulk_headers", "").strip()
+
+    if raw_input:
+        blocks = [b.strip() for b in raw_input.split("---") if b.strip()]
+        for i, block in enumerate(blocks[:10]):  # Max 10 at once
+            try:
+                report = run_full_analysis(block)
+                scan_id = save_scan(report)
+                score = report["risk_score"]
+                results.append({
+                    "index": i + 1,
+                    "scan_id": scan_id,
+                    "subject": report["parsed"].get("subject") or "No subject",
+                    "from": report["parsed"].get("from") or "—",
+                    "score": score,
+                    "verdict": "high_risk" if score >= 70 else "suspicious" if score >= 40 else "clean",
+                    "warnings": len(report["spoofing_warnings"]),
+                    "malicious_ips": sum(1 for g in report["geo"] if g.get("abuse", {}).get("verdict") == "malicious"),
+                    "provider": report.get("provider", {}).get("name", "Unknown"),
+                    "error": None
+                })
+            except Exception as e:
+                results.append({
+                    "index": i + 1,
+                    "scan_id": None,
+                    "subject": f"Block {i+1}",
+                    "from": "—",
+                    "score": 0,
+                    "verdict": "error",
+                    "warnings": 0,
+                    "malicious_ips": 0,
+                    "provider": "—",
+                    "error": str(e)
+                })
+
+    return render_template("bulk_result.html", results=results)
 
 if __name__ == "__main__":
     app.run(debug=True)

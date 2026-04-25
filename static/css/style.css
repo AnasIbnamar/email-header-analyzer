@@ -1243,3 +1243,45 @@ body.report-page {
     border: 1.5px solid;
     flex-shrink: 0;
 }
+
+/* Bulk Analysis */
+.bulk-instructions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.bulk-step {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.82rem;
+    color: var(--text2);
+}
+
+.bulk-step-num {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--teal-dim);
+    border: 1px solid rgba(0,229,195,0.3);
+    color: var(--teal);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.bulk-step-sep {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--text3);
+}

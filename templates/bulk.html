@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Analysis — HeaderScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="report-page">
+<div class="noise"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="logo-text">HeaderScan</span>
+    </div>
+
+    <div style="padding: 1.5rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+        <div class="score-label">Bulk Analysis</div>
+        <div style="font-size: 0.85rem; color: var(--text2); margin-top: 0.5rem; line-height: 1.6;">
+            Analyze up to 10 email headers at once. Separate each block with <span class="mono" style="color: var(--teal);">---</span>
+        </div>
+    </div>
+
+    <nav class="side-nav">
+        <a href="/" class="side-link">← Single Scan</a>
+        <a href="/history" class="side-link">History</a>
+        <a href="/api" class="side-link">API Docs</a>
+    </nav>
+</aside>
+
+<main class="report-main">
+    <div class="report-topbar">
+        <div>
+            <div class="report-title">Bulk Email Analysis</div>
+            <div class="report-sub">Analyze multiple email headers in one shot</div>
+        </div>
+    </div>
+
+    <div class="bulk-instructions">
+        <div class="bulk-step">
+            <div class="bulk-step-num">1</div>
+            <div>Paste the raw headers of your first email</div>
+        </div>
+        <div class="bulk-step-sep">---</div>
+        <div class="bulk-step">
+            <div class="bulk-step-num">2</div>
+            <div>Type <span class="mono" style="color:var(--teal);">---</span> on a new line to separate emails</div>
+        </div>
+        <div class="bulk-step-sep">---</div>
+        <div class="bulk-step">
+            <div class="bulk-step-num">3</div>
+            <div>Paste the next email headers below</div>
+        </div>
+    </div>
+
+    <div class="report-section">
+        <form method="POST" action="/bulk/analyze">
+            <textarea
+                name="bulk_headers"
+                rows="20"
+                placeholder="From: sender1@example.com
+Subject: Email 1
+Received: from mail.example.com...
+
+---
+
+From: sender2@phishing.com
+Subject: Email 2
+Received: from mail.evil.com..."
+                style="width: 100%; font-family: var(--mono); font-size: 0.78rem;"
+            ></textarea>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 1rem;">
+                <div style="font-size: 0.78rem; color: var(--text3);">
+                    Max 10 emails per batch · Each scan is saved to history
+                </div>
+                <button type="submit" class="scan-btn" style="width: auto; padding: 0.8rem 2rem;">
+                    Analyze All →
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+</body>
+</html>

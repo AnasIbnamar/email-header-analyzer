@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Results — HeaderScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="report-page">
+<div class="noise"></div>
+
+<aside class="sidebar">
+    <div class="sidebar-logo">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+            <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+        </svg>
+        <span class="logo-text">HeaderScan</span>
+    </div>
+
+    <div style="padding: 1rem 0; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+        <div class="score-label">Batch Summary</div>
+        <div style="font-size: 2rem; font-weight: 800; letter-spacing: -0.04em; margin-top: 0.5rem;">
+            {{ results | length }}
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text3);">emails analyzed</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">High Risk</span>
+            <span style="color: var(--red); font-weight: 600;">{{ results | selectattr('verdict', 'equalto', 'high_risk') | list | length }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">Suspicious</span>
+            <span style="color: var(--amber); font-weight: 600;">{{ results | selectattr('verdict', 'equalto', 'suspicious') | list | length }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">Clean</span>
+            <span style="color: var(--green); font-weight: 600;">{{ results | selectattr('verdict', 'equalto', 'clean') | list | length }}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.82rem;">
+            <span style="color: var(--text2);">Malicious IPs</span>
+            <span style="color: var(--red); font-weight: 600;">{{ results | sum(attribute='malicious_ips') }}</span>
+        </div>
+    </div>
+
+    <nav class="side-nav">
+        <a href="/bulk" class="side-link">← New Batch</a>
+        <a href="/" class="side-link">Single Scan</a>
+        <a href="/history" class="side-link">History</a>
+    </nav>
+</aside>
+
+<main class="report-main">
+    <div class="report-topbar">
+        <div>
+            <div class="report-title">Bulk Analysis Results</div>
+            <div class="report-sub">{{ results | length }} emails analyzed · All saved to history</div>
+        </div>
+        <a href="/bulk" class="pdf-btn">← New Batch</a>
+    </div>
+
+    <div class="history-table-wrap">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Subject</th>
+                    <th>From</th>
+                    <th>Provider</th>
+                    <th>Score</th>
+                    <th>Verdict</th>
+                    <th>Malicious IPs</th>
+                    <th>Warnings</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in results %}
+                <tr class="history-row" {% if r.scan_id %}onclick="window.location='/scan/{{ r.scan_id }}'"{% endif %}>
+                    <td class="mono" style="color: var(--text3);">{{ r.index }}</td>
+                    <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ r.subject }}
+                    </td>
+                    <td class="mono" style="color: var(--text2); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        {{ r.from }}
+                    </td>
+                    <td style="font-size: 0.8rem; color: var(--text2);">{{ r.provider }}</td>
+                    <td>
+                        <span class="score-val
+                            {% if r.score >= 70 %}stat-red
+                            {% elif r.score >= 40 %}stat-amber
+                            {% else %}stat-green{% endif %}">
+                            {{ r.score }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if r.error %}
+                        <span class="verdict-pill vp-high">ERROR</span>
+                        {% else %}
+                        <span class="verdict-pill
+                            {% if r.verdict == 'high_risk' %}vp-high
+                            {% elif r.verdict == 'suspicious' %}vp-med
+                            {% else %}vp-low{% endif %}">
+                            {{ r.verdict | upper | replace('_', ' ') }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if r.malicious_ips > 0 %}
+                        <span style="color: var(--red); font-weight: 600;">{{ r.malicious_ips }}</span>
+                        {% else %}
+                        <span style="color: var(--text3);">0</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center;">
+                        {% if r.warnings > 0 %}
+                        <span style="color: var(--amber); font-weight: 600;">{{ r.warnings }}</span>
+                        {% else %}
+                        <span style="color: var(--text3);">0</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if r.scan_id %}
+                        <a href="/scan/{{ r.scan_id }}" style="font-size: 0.75rem; color: var(--teal); text-decoration: none;">View →</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</main>
+</body>
+</html>
