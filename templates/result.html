@@ -210,20 +210,67 @@
         </section>
         {% endif %}
 
-        <!-- Geolocation -->
+<!-- Geolocation -->
         {% if report.geo %}
         <section class="report-section" id="geo">
-            <div class="section-label">04 — IP Geolocation</div>
-            <div class="geo-grid">
+            <div class="section-label">04 — IP Reputation & Geolocation</div>
+            <div class="ip-list">
                 {% for g in report.geo %}
-                <div class="geo-card">
-                    <div class="geo-ip mono">{{ g.ip }}</div>
-                    {% if g.status == 'success' %}
-                    <div class="geo-loc">{{ g.city }}, {{ g.country }}</div>
-                    <div class="geo-isp">{{ g.isp }}</div>
-                    {% else %}
-                    <div class="geo-loc geo-err">Geolocation unavailable</div>
-                    {% endif %}
+                <div class="ip-card">
+                    <div class="ip-card-top">
+                        <div class="ip-address mono">{{ g.ip }}</div>
+                        {% if g.abuse.status == 'success' %}
+                        <div class="abuse-badge
+                            {% if g.abuse.verdict == 'malicious' %}abuse-bad
+                            {% elif g.abuse.verdict == 'suspicious' %}abuse-warn
+                            {% elif g.abuse.verdict == 'low_risk' %}abuse-low
+                            {% else %}abuse-clean{% endif %}">
+                            {% if g.abuse.verdict == 'malicious' %}MALICIOUS
+                            {% elif g.abuse.verdict == 'suspicious' %}SUSPICIOUS
+                            {% elif g.abuse.verdict == 'low_risk' %}LOW RISK
+                            {% else %}CLEAN{% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="ip-card-body">
+                        {% if g.abuse.status == 'success' %}
+                        <div class="ip-stat-row">
+                            <div class="ip-stat">
+                                <div class="ip-stat-num
+                                    {% if g.abuse.abuse_score >= 80 %}stat-red
+                                    {% elif g.abuse.abuse_score >= 40 %}stat-amber
+                                    {% else %}stat-green{% endif %}">
+                                    {{ g.abuse.abuse_score }}%
+                                </div>
+                                <div class="ip-stat-lbl">Abuse Score</div>
+                            </div>
+                            <div class="ip-stat">
+                                <div class="ip-stat-num">{{ g.abuse.total_reports }}</div>
+                                <div class="ip-stat-lbl">Reports</div>
+                            </div>
+                            <div class="ip-stat">
+                                <div class="ip-stat-num">{{ g.abuse.country or "—" }}</div>
+                                <div class="ip-stat-lbl">Country</div>
+                            </div>
+                            {% if g.abuse.is_tor %}
+                            <div class="ip-stat">
+                                <div class="ip-stat-num stat-red">YES</div>
+                                <div class="ip-stat-lbl">Tor Node</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% if g.abuse.isp %}
+                        <div class="ip-isp mono">{{ g.abuse.isp }}{% if g.abuse.domain %} · {{ g.abuse.domain }}{% endif %}</div>
+                        {% endif %}
+                        {% if g.abuse.last_reported %}
+                        <div class="ip-last mono">Last reported: {{ g.abuse.last_reported[:10] }}</div>
+                        {% endif %}
+                        {% elif g.status == 'success' %}
+                        <div class="ip-geo">{{ g.city }}, {{ g.country }} · {{ g.isp }}</div>
+                        {% else %}
+                        <div class="ip-geo muted">Geolocation unavailable</div>
+                        {% endif %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
