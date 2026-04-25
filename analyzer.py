@@ -1,6 +1,7 @@
 import re
 import email
 from email import policy
+from email.header import decode_header as _decode_header
 import dns.resolver
 import requests as http_requests
 
@@ -32,7 +33,21 @@ def parse_headers(raw_headers):
         result["from"]        = msg.get("From", "")
         result["reply_to"]    = msg.get("Reply-To", "")
         result["to"]          = msg.get("To", "")
-        result["subject"]     = msg.get("Subject", "")
+        
+        # Decode subject (handles encoded subjects like =?UTF-8?B?...)
+        raw_subject = msg.get("Subject", "")
+        try:
+            decoded_parts = _decode_header(raw_subject)
+            subject_str = ""
+            for part, enc in decoded_parts:
+                if isinstance(part, bytes):
+                    subject_str += part.decode(enc or "utf-8", errors="replace")
+                else:
+                    subject_str += part
+            result["subject"] = subject_str
+        except Exception:
+            result["subject"] = raw_subject
+            
         result["date"]        = msg.get("Date", "")
         result["message_id"]  = msg.get("Message-ID", "")
         result["return_path"] = msg.get("Return-Path", "")
@@ -111,7 +126,7 @@ def extract_ips(text):
 
 
 def is_valid_ip(ip):
-    """Check it's a real routable IP, not private or loopback."""
+    """Check it's a real routable IP, not private, loopback, or malformed."""
     parts = ip.split(".")
     if len(parts) != 4:
         return False
@@ -120,15 +135,23 @@ def is_valid_ip(ip):
     except ValueError:
         return False
 
+    # Reject leading zeros (e.g. 04.25.13.42 is a date, not an IP)
+    for part in parts:
+        if len(part) > 1 and part.startswith("0"):
+            return False
+
     # Filter out loopback
     if octets[0] == 127:
         return False
-    # Filter out private ranges (10.x, 172.16-31.x, 192.168.x)
+    # Filter out private ranges
     if octets[0] == 10:
         return False
     if octets[0] == 172 and 16 <= octets[1] <= 31:
         return False
     if octets[0] == 192 and octets[1] == 168:
+        return False
+    # Filter out obviously invalid first octet
+    if octets[0] == 0:
         return False
 
     return all(0 <= o <= 255 for o in octets)
@@ -343,7 +366,7 @@ def geolocate_ip(ip):
             result["status"] = data.get("message", "failed")
 
     except Exception as e:
-        result["status"] = f"error: {str(e)}"
+        result["status"] = "unavailable"
 
     return result
 
@@ -356,7 +379,7 @@ def calculate_risk_score(parsed, spf, dmarc, dkim, spoofing_warnings):
     score = 0
 
     # SPF scoring
-    if spf["status"] in ("not_found", "no_spf_record"):
+    if spf["status"] in ("not_found", "no_spf_record", "domain_not_found"):
         score += 25
     elif spf["verdict"] == "dangerous":   # +all
         score += 35
@@ -364,7 +387,7 @@ def calculate_risk_score(parsed, spf, dmarc, dkim, spoofing_warnings):
         score += 15
 
     # DMARC scoring
-    if dmarc["status"] in ("not_found", "no_dmarc_record"):
+    if dmarc["status"] in ("not_found", "no_dmarc_record", "domain_not_found"):
         score += 25
     elif dmarc["verdict"] == "weak":      # p=none
         score += 15

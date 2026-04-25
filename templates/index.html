@@ -3,36 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Email Header Analyzer</title>
+    <title>HeaderScan — Email Threat Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Email Header Analyzer</h1>
-            <p class="subtitle">Detect phishing, spoofing, and email authentication issues</p>
-        </header>
+    <div class="noise"></div>
 
-        {% if error %}
-        <div class="alert alert-danger">{{ error }}</div>
-        {% endif %}
-
-        <div class="card">
-            <h2>Paste Email Headers</h2>
-            <p class="hint">
-                In Gmail: open email → three dots → <strong>Show original</strong> → copy everything.<br>
-                In Outlook: open email → File → Properties → copy from "Internet headers".
-            </p>
-            <form method="POST" action="/analyze">
-                <textarea
-                    name="headers"
-                    placeholder="Paste raw email headers here..."
-                    rows="16"
-                    required
-                ></textarea>
-                <button type="submit">Analyze Headers</button>
-            </form>
+    <nav class="topnav">
+        <div class="logo">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                <polygon points="9,1 17,5 17,13 9,17 1,13 1,5" stroke="#00e5c3" stroke-width="1.5" fill="none"/>
+                <polygon points="9,5 13,7 13,11 9,13 5,11 5,7" fill="#00e5c3" opacity="0.3"/>
+            </svg>
+            <span class="logo-text">HeaderScan</span>
         </div>
-    </div>
+    </nav>
+
+    <main class="page-center">
+        <div class="split">
+
+            <div class="split-left">
+                <div class="badge">
+                    <span class="badge-dot"></span>
+                    Email Threat Intelligence
+                </div>
+
+                <h1 class="hero-title">
+                    Expose what's hiding<br>in your <span class="accent">email headers.</span>
+                </h1>
+
+                <p class="hero-desc">
+                    Paste raw headers to detect phishing, spoofing,
+                    and authentication failures — with a precise threat score.
+                </p>
+
+                <div class="feature-list">
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>SPF / DKIM / DMARC DNS validation</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>IP geolocation of sending servers</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>Spoofing &amp; Reply-To mismatch detection</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="fi-icon">✓</span>
+                        <span>Full delivery chain visualization</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="split-right">
+                <div class="form-card">
+                    <div class="form-card-header">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="form-card-title">raw_headers.txt</span>
+                    </div>
+
+                    {% if error %}
+                    <div class="error-msg">{{ error }}</div>
+                    {% endif %}
+
+                    <div class="form-body">
+                        <form method="POST" action="/analyze">
+                            <textarea name="headers" placeholder="Paste email headers here..." rows="12" required></textarea>
+                            <div class="form-hint">
+                                <strong>Gmail:</strong> three dots → Show original &nbsp;·&nbsp;
+                                <strong>Outlook:</strong> File → Properties → Internet headers
+                            </div>
+                            <button type="submit" class="scan-btn">
+                                Run Analysis <span class="btn-arrow">→</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
 </body>
 </html>

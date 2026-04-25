@@ -3,145 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Analysis Report — Email Header Analyzer</title>
+    <title>Threat Report — HeaderScan</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
-<div class="container">
-    <header>
-        <h1>Analysis Report</h1>
-        <a href="/" class="back-link">← Analyze another email</a>
-    </header>
+<body class="report-page">
+    <div class="noise"></div>
 
-    <!-- Risk Score Banner -->
-    <div class="risk-banner {% if report.risk_score >= 70 %}risk-high{% elif report.risk_score >= 40 %}risk-medium{% else %}risk-low{% endif %}">
-        <div class="risk-number">{{ report.risk_score }}/100</div>
-        <div class="risk-label">
-            {% if report.risk_score >= 70 %}High Risk — Likely Malicious
-            {% elif report.risk_score >= 40 %}Medium Risk — Suspicious
-            {% else %}Low Risk — Appears Legitimate
-            {% endif %}
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span class="logo-icon">⬡</span>
+            <span class="logo-text">HeaderScan</span>
         </div>
-    </div>
 
-    <!-- Spoofing Warnings -->
-    {% if report.spoofing_warnings %}
-    <div class="card">
-        <h2>Spoofing Indicators</h2>
-        {% for warning in report.spoofing_warnings %}
-        <div class="alert alert-danger">⚠ {{ warning }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- Email Identity -->
-    <div class="card">
-        <h2>Email Identity</h2>
-        <table class="info-table">
-            <tr><td>From</td><td>{{ report.parsed.from or "—" }}</td></tr>
-            <tr><td>Reply-To</td><td>{{ report.parsed.reply_to or "—" }}</td></tr>
-            <tr><td>Return-Path</td><td>{{ report.parsed.return_path or "—" }}</td></tr>
-            <tr><td>To</td><td>{{ report.parsed.to or "—" }}</td></tr>
-            <tr><td>Subject</td><td>{{ report.parsed.subject or "—" }}</td></tr>
-            <tr><td>Date</td><td>{{ report.parsed.date or "—" }}</td></tr>
-            <tr><td>Message-ID</td><td>{{ report.parsed.message_id or "—" }}</td></tr>
-        </table>
-    </div>
-
-    <!-- Authentication Results -->
-    <div class="card">
-        <h2>Authentication</h2>
-        <div class="auth-grid">
-
-            <div class="auth-box">
-                <div class="auth-label">SPF</div>
-                <div class="auth-status
-                    {% if report.spf.verdict == 'strict' %}status-good
-                    {% elif report.spf.verdict in ['soft_fail', 'neutral'] %}status-warn
-                    {% elif report.spf.verdict == 'dangerous' %}status-bad
-                    {% else %}status-bad{% endif %}">
-                    {% if report.spf.status == 'found' %}{{ report.spf.verdict }}
-                    {% else %}{{ report.spf.status }}{% endif %}
+        <div class="score-panel">
+            <div class="score-label">Threat Score</div>
+            <div class="score-ring-wrap">
+                <svg class="score-ring" viewBox="0 0 120 120">
+                    <circle class="ring-bg" cx="60" cy="60" r="50"/>
+                    <circle class="ring-fill
+                        {% if report.risk_score >= 70 %}ring-high
+                        {% elif report.risk_score >= 40 %}ring-med
+                        {% else %}ring-low{% endif %}"
+                        cx="60" cy="60" r="50"
+                        stroke-dasharray="314"
+                        stroke-dashoffset="{{ 314 - (314 * report.risk_score / 100) }}"/>
+                </svg>
+                <div class="score-center">
+                    <div class="score-num">{{ report.risk_score }}</div>
+                    <div class="score-denom">/100</div>
                 </div>
-                {% if report.spf.record %}
-                <div class="auth-record">{{ report.spf.record }}</div>
-                {% endif %}
             </div>
-
-            <div class="auth-box">
-                <div class="auth-label">DMARC</div>
-                <div class="auth-status
-                    {% if report.dmarc.verdict == 'strict' %}status-good
-                    {% elif report.dmarc.verdict == 'moderate' %}status-warn
-                    {% elif report.dmarc.verdict in ['weak', 'none'] %}status-warn
-                    {% else %}status-bad{% endif %}">
-                    {% if report.dmarc.status == 'found' %}p={{ report.dmarc.policy }}
-                    {% else %}{{ report.dmarc.status }}{% endif %}
-                </div>
-                {% if report.dmarc.record %}
-                <div class="auth-record">{{ report.dmarc.record }}</div>
-                {% endif %}
+            <div class="score-verdict
+                {% if report.risk_score >= 70 %}verdict-high
+                {% elif report.risk_score >= 40 %}verdict-med
+                {% else %}verdict-low{% endif %}">
+                {% if report.risk_score >= 70 %}HIGH RISK
+                {% elif report.risk_score >= 40 %}SUSPICIOUS
+                {% else %}CLEAN{% endif %}
             </div>
+        </div>
 
-            <div class="auth-box">
-                <div class="auth-label">DKIM</div>
-                <div class="auth-status {% if report.dkim.present %}status-good{% else %}status-bad{% endif %}">
-                    {% if report.dkim.present %}present{% else %}missing{% endif %}
-                </div>
-                {% if report.dkim.domain %}
-                <div class="auth-record">Signed by: {{ report.dkim.domain }}</div>
-                {% endif %}
+        <nav class="side-nav">
+            <a href="#identity" class="side-link">Identity</a>
+            <a href="#auth" class="side-link">Authentication</a>
+            <a href="#chain" class="side-link">Delivery Chain</a>
+            <a href="#geo" class="side-link">Geolocation</a>
+            <a href="#xheaders" class="side-link">X-Headers</a>
+        </nav>
+
+        <a href="/" class="new-scan-btn">← New Scan</a>
+    </aside>
+
+    <!-- Main content -->
+    <main class="report-main">
+
+        <div class="report-topbar">
+            <div>
+                <div class="report-title">Threat Analysis Report</div>
+                <div class="report-sub">{{ report.parsed.subject or "No subject" }}</div>
             </div>
-
         </div>
-    </div>
 
-    <!-- Delivery Chain -->
-    {% if report.parsed.received_chain %}
-    <div class="card">
-        <h2>Delivery Chain</h2>
-        <p class="hint">Most recent hop first.</p>
-        {% for hop in report.parsed.received_chain %}
-        <div class="hop">
-            <div class="hop-number">Hop {{ loop.index }}</div>
-            <div class="hop-detail"><strong>From:</strong> {{ hop.from_host or "unknown" }}</div>
-            <div class="hop-detail"><strong>By:</strong> {{ hop.by_host or "unknown" }}</div>
-            {% if hop.ips %}<div class="hop-detail"><strong>IPs:</strong> {{ hop.ips | join(", ") }}</div>{% endif %}
-            {% if hop.timestamp %}<div class="hop-detail"><strong>Time:</strong> {{ hop.timestamp }}</div>{% endif %}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- IP Geolocation -->
-    {% if report.geo %}
-    <div class="card">
-        <h2>IP Geolocation</h2>
-        {% for g in report.geo %}
-        <div class="geo-entry">
-            <strong>{{ g.ip }}</strong> —
-            {% if g.status == 'success' %}
-                {{ g.city }}, {{ g.country }} | ISP: {{ g.isp }}
-            {% else %}
-                {{ g.status }}
-            {% endif %}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <!-- X-Headers -->
-    {% if report.parsed.x_headers %}
-    <div class="card">
-        <h2>Custom Headers (X-)</h2>
-        <table class="info-table">
-            {% for key, value in report.parsed.x_headers.items() %}
-            <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+        <!-- Warnings -->
+        {% if report.spoofing_warnings %}
+        <div class="warnings-block">
+            {% for w in report.spoofing_warnings %}
+            <div class="warning-pill">
+                <span class="warn-icon">!</span>
+                {{ w }}
+            </div>
             {% endfor %}
-        </table>
-    </div>
-    {% endif %}
+        </div>
+        {% endif %}
 
-</div>
+        <!-- Identity -->
+        <section class="report-section" id="identity">
+            <div class="section-label">01 — Email Identity</div>
+            <div class="identity-grid">
+                <div class="id-row">
+                    <div class="id-key">From</div>
+                    <div class="id-val mono">{{ report.parsed.from or "—" }}</div>
+                </div>
+                <div class="id-row">
+                    <div class="id-key">Reply-To</div>
+                    <div class="id-val mono {% if report.parsed.reply_to and report.parsed.from and report.parsed.reply_to != report.parsed.from %}id-danger{% endif %}">
+                        {{ report.parsed.reply_to or "—" }}
+                    </div>
+                </div>
+                <div class="id-row">
+                    <div class="id-key">Return-Path</div>
+                    <div class="id-val mono">{{ report.parsed.return_path or "—" }}</div>
+                </div>
+                <div class="id-row">
+                    <div class="id-key">To</div>
+                    <div class="id-val mono">{{ report.parsed.to or "—" }}</div>
+                </div>
+                <div class="id-row">
+                    <div class="id-key">Date</div>
+                    <div class="id-val mono">{{ report.parsed.date or "—" }}</div>
+                </div>
+                <div class="id-row">
+                    <div class="id-key">Message-ID</div>
+                    <div class="id-val mono">{{ report.parsed.message_id or "—" }}</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Authentication -->
+        <section class="report-section" id="auth">
+            <div class="section-label">02 — Authentication</div>
+            <div class="auth-trio">
+
+                <div class="auth-card">
+                    <div class="auth-proto">SPF</div>
+                    <div class="auth-badge
+                        {% if report.spf.verdict == 'strict' %}badge-good
+                        {% elif report.spf.verdict in ['soft_fail','neutral'] %}badge-warn
+                        {% else %}badge-bad{% endif %}">
+                        {% if report.spf.status == 'found' %}{{ report.spf.verdict }}{% else %}{{ report.spf.status }}{% endif %}
+                    </div>
+                    {% if report.spf.record %}
+                    <div class="auth-rec mono">{{ report.spf.record }}</div>
+                    {% endif %}
+                    <div class="auth-explain">
+                        {% if report.spf.verdict == 'strict' %}Domain strictly controls who can send on its behalf.
+                        {% elif report.spf.verdict == 'soft_fail' %}Soft fail — servers not on SPF list are flagged but not rejected.
+                        {% elif report.spf.verdict == 'dangerous' %}+all means anyone can send as this domain. Critical red flag.
+                        {% else %}No SPF record found — domain has no sending policy.{% endif %}
+                    </div>
+                </div>
+
+                <div class="auth-card">
+                    <div class="auth-proto">DMARC</div>
+                    <div class="auth-badge
+                        {% if report.dmarc.verdict == 'strict' %}badge-good
+                        {% elif report.dmarc.verdict == 'moderate' %}badge-warn
+                        {% elif report.dmarc.verdict == 'weak' %}badge-warn
+                        {% else %}badge-bad{% endif %}">
+                        {% if report.dmarc.status == 'found' %}p={{ report.dmarc.policy }}{% else %}{{ report.dmarc.status }}{% endif %}
+                    </div>
+                    {% if report.dmarc.record %}
+                    <div class="auth-rec mono">{{ report.dmarc.record }}</div>
+                    {% endif %}
+                    <div class="auth-explain">
+                        {% if report.dmarc.policy == 'reject' %}Strongest policy — failing emails are rejected outright.
+                        {% elif report.dmarc.policy == 'quarantine' %}Failing emails are sent to spam/quarantine.
+                        {% elif report.dmarc.policy == 'none' %}Monitoring only — no enforcement action taken.
+                        {% else %}No DMARC record — domain has no authentication policy.{% endif %}
+                    </div>
+                </div>
+
+                <div class="auth-card">
+                    <div class="auth-proto">DKIM</div>
+                    <div class="auth-badge {% if report.dkim.present %}badge-good{% else %}badge-bad{% endif %}">
+                        {% if report.dkim.present %}present{% else %}missing{% endif %}
+                    </div>
+                    {% if report.dkim.domain %}
+                    <div class="auth-rec mono">Signed by: {{ report.dkim.domain }}</div>
+                    {% endif %}
+                    <div class="auth-explain">
+                        {% if report.dkim.present %}Email body is cryptographically signed — content integrity verified.
+                        {% else %}No DKIM signature — email content may have been altered in transit.{% endif %}
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- Delivery Chain -->
+        {% if report.parsed.received_chain %}
+        <section class="report-section" id="chain">
+            <div class="section-label">03 — Delivery Chain</div>
+            <div class="chain-wrap">
+                {% for hop in report.parsed.received_chain %}
+                <div class="chain-hop">
+                    <div class="hop-index">{{ loop.index }}</div>
+                    <div class="hop-body">
+                        <div class="hop-row">
+                            <span class="hop-key">FROM</span>
+                            <span class="hop-val mono">{{ hop.from_host or "unknown" }}</span>
+                        </div>
+                        <div class="hop-row">
+                            <span class="hop-key">BY</span>
+                            <span class="hop-val mono">{{ hop.by_host or "unknown" }}</span>
+                        </div>
+                        {% if hop.ips %}
+                        <div class="hop-row">
+                            <span class="hop-key">IP</span>
+                            <span class="hop-val mono ip-tag">{{ hop.ips | join(", ") }}</span>
+                        </div>
+                        {% endif %}
+                        {% if hop.timestamp %}
+                        <div class="hop-row">
+                            <span class="hop-key">TIME</span>
+                            <span class="hop-val mono">{{ hop.timestamp }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not loop.last %}<div class="chain-arrow">↓</div>{% endif %}
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- Geolocation -->
+        {% if report.geo %}
+        <section class="report-section" id="geo">
+            <div class="section-label">04 — IP Geolocation</div>
+            <div class="geo-grid">
+                {% for g in report.geo %}
+                <div class="geo-card">
+                    <div class="geo-ip mono">{{ g.ip }}</div>
+                    {% if g.status == 'success' %}
+                    <div class="geo-loc">{{ g.city }}, {{ g.country }}</div>
+                    <div class="geo-isp">{{ g.isp }}</div>
+                    {% else %}
+                    <div class="geo-loc geo-err">Geolocation unavailable</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- X-Headers -->
+        {% if report.parsed.x_headers %}
+        <section class="report-section" id="xheaders">
+            <div class="section-label">05 — Custom Headers</div>
+            <div class="xhead-list">
+                {% for key, value in report.parsed.x_headers.items() %}
+                <div class="xhead-row">
+                    <div class="xhead-key mono">{{ key }}</div>
+                    <div class="xhead-val mono">{{ value }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+    </main>
 </body>
 </html>
