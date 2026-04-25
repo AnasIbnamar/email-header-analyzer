@@ -1209,3 +1209,37 @@ body.report-page {
     background: var(--teal);
     color: var(--bg);
 }
+
+/* Graph */
+.graph-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    width: 100%;
+}
+
+#chainGraph { width: 100%; display: block; }
+
+.graph-legend {
+    display: flex;
+    gap: 1.5rem;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text2);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid;
+    flex-shrink: 0;
+}

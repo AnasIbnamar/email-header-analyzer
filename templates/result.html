@@ -52,6 +52,7 @@
             <a href="#identity" class="side-link">Identity</a>
             <a href="#auth" class="side-link">Authentication</a>
             <a href="#chain" class="side-link">Delivery Chain</a>
+            <a href="#graph" class="side-link">Path Graph</a>
             <a href="#geo" class="side-link">Geolocation</a>
             <a href="#xheaders" class="side-link">X-Headers</a>
         </nav>
@@ -226,6 +227,20 @@
                 {% endfor %}
             </div>
         </section>
+
+        <!-- Delivery Chain Graph -->
+        <section class="report-section" id="graph">
+            <div class="section-label">03b — Delivery Path Visualization</div>
+            <div class="graph-wrap">
+                <div class="graph-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:rgba(255,77,106,0.15);border-color:#ff4d6a"></span>Malicious</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:rgba(61,220,132,0.12);border-color:#3ddc84"></span>Trusted</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:rgba(0,229,195,0.12);border-color:#00e5c3"></span>Recipient</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:rgba(122,138,160,0.1);border-color:#7a8aa0"></span>Unknown</span>
+                </div>
+                <svg id="chainGraph"></svg>
+            </div>
+        </section>
         {% endif %}
 
         {% if report.geo %}
@@ -309,5 +324,159 @@
         {% endif %}
 
     </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script>
+    (function() {
+        const hops = {{ report.parsed.received_chain | tojson }};
+        const geoData = {{ report.geo | tojson }};
+        if (!hops || hops.length === 0) return;
+
+        const maliciousIPs = new Set();
+        geoData.forEach(g => {
+            if (g.abuse && g.abuse.verdict === 'malicious') maliciousIPs.add(g.ip);
+        });
+
+        const nodeMap = new Map();
+        const addNode = (id, label, ips) => {
+            if (!nodeMap.has(id)) {
+                const isMalicious = ips && ips.some(ip => maliciousIPs.has(ip));
+                const isGoogle = label && (label.includes('google') || label.includes('gmail'));
+                const isMicrosoft = label && (label.includes('microsoft') || label.includes('outlook'));
+                nodeMap.set(id, {
+                    id, label: label || id, ips: ips || [],
+                    type: isMalicious ? 'malicious' : (isGoogle || isMicrosoft) ? 'trusted' : 'neutral'
+                });
+            }
+        };
+
+        hops.forEach(hop => {
+            addNode(hop.from_host || 'unknown', hop.from_host, hop.ips);
+            addNode(hop.by_host || 'unknown2', hop.by_host, []);
+        });
+
+        const recipient = '{{ report.parsed.to or "recipient" }}';
+        nodeMap.set('recipient', { id: 'recipient', label: recipient, ips: [], type: 'recipient' });
+
+        const nodes = Array.from(nodeMap.values());
+        const links = [];
+
+        hops.forEach(hop => {
+            const src = hop.from_host || 'unknown';
+            const tgt = hop.by_host || 'unknown2';
+            if (nodeMap.has(src) && nodeMap.has(tgt)) {
+                links.push({ source: src, target: tgt, ips: hop.ips });
+            }
+        });
+
+        const lastHop = hops[hops.length - 1];
+        if (lastHop && lastHop.by_host) {
+            links.push({ source: lastHop.by_host, target: 'recipient', ips: [] });
+        }
+
+        const wrap = document.querySelector('.graph-wrap');
+        const W = wrap.clientWidth || 700;
+        const H = Math.max(300, nodes.length * 70);
+
+        const svg = d3.select('#chainGraph')
+            .attr('width', W)
+            .attr('height', H);
+
+        svg.append('defs').append('marker')
+            .attr('id', 'arrow')
+            .attr('viewBox', '0 -5 10 10')
+            .attr('refX', 30)
+            .attr('refY', 0)
+            .attr('markerWidth', 6)
+            .attr('markerHeight', 6)
+            .attr('orient', 'auto')
+            .append('path')
+            .attr('d', 'M0,-5L10,0L0,5')
+            .attr('fill', '#3d5068');
+
+        const sim = d3.forceSimulation(nodes)
+            .force('link', d3.forceLink(links).id(d => d.id).distance(180))
+            .force('charge', d3.forceManyBody().strength(-500))
+            .force('center', d3.forceCenter(W / 2, H / 2))
+            .force('y', d3.forceY(H / 2).strength(0.05));
+
+        const link = svg.append('g').selectAll('line')
+            .data(links).join('line')
+            .attr('stroke', '#3d5068')
+            .attr('stroke-width', 1.5)
+            .attr('marker-end', 'url(#arrow)');
+
+        const linkLabel = svg.append('g').selectAll('text')
+            .data(links.filter(l => l.ips && l.ips.length > 0))
+            .join('text')
+            .attr('font-size', 9)
+            .attr('fill', '#00e5c3')
+            .attr('font-family', 'JetBrains Mono, monospace')
+            .text(d => d.ips[0]);
+
+        const colorMap = {
+            malicious: '#ff4d6a',
+            trusted:   '#3ddc84',
+            recipient: '#00e5c3',
+            neutral:   '#7a8aa0'
+        };
+
+        const bgMap = {
+            malicious: 'rgba(255,77,106,0.15)',
+            trusted:   'rgba(61,220,132,0.12)',
+            recipient: 'rgba(0,229,195,0.12)',
+            neutral:   'rgba(122,138,160,0.1)'
+        };
+
+        const node = svg.append('g').selectAll('g')
+            .data(nodes).join('g')
+            .call(d3.drag()
+                .on('start', (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+                .on('drag',  (e, d) => { d.fx = e.x; d.fy = e.y; })
+                .on('end',   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; })
+            );
+
+        node.append('circle')
+            .attr('r', 26)
+            .attr('fill', d => bgMap[d.type])
+            .attr('stroke', d => colorMap[d.type])
+            .attr('stroke-width', 1.5);
+
+        node.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', 42)
+            .attr('font-size', 9)
+            .attr('fill', '#7a8aa0')
+            .attr('font-family', 'JetBrains Mono, monospace')
+            .text(d => d.label && d.label.length > 22 ? d.label.slice(0, 20) + '…' : (d.label || ''));
+
+        node.append('text')
+            .attr('text-anchor', 'middle')
+            .attr('dy', 5)
+            .attr('font-size', 13)
+            .attr('fill', d => colorMap[d.type])
+            .text(d => {
+                if (d.type === 'malicious') return '✕';
+                if (d.type === 'trusted')   return '✓';
+                if (d.type === 'recipient') return '✉';
+                return '⇒';
+            });
+
+        sim.on('tick', () => {
+            link
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+
+            linkLabel
+                .attr('x', d => (d.source.x + d.target.x) / 2)
+                .attr('y', d => (d.source.y + d.target.y) / 2 - 8);
+
+            node.attr('transform', d => `translate(${d.x},${d.y})`);
+        });
+    })();
+    </script>
+
 </body>
 </html>
