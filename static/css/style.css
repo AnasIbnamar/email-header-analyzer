@@ -786,3 +786,87 @@ body.report-page {
     color: var(--text2);
     word-break: break-all;
 }
+
+/* IP Reputation Cards */
+.ip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.ip-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.ip-card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.ip-address {
+    font-size: 0.92rem;
+    color: var(--teal);
+    font-weight: 500;
+}
+
+.abuse-badge {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    padding: 0.25rem 0.7rem;
+    border-radius: 99px;
+}
+
+.abuse-bad   { background: var(--red-dim);   color: var(--red);   border: 1px solid rgba(255,77,106,0.3); }
+.abuse-warn  { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(255,181,71,0.3); }
+.abuse-low   { background: rgba(255,181,71,0.06); color: var(--amber); border: 1px solid rgba(255,181,71,0.2); }
+.abuse-clean { background: var(--green-dim); color: var(--green); border: 1px solid rgba(61,220,132,0.3); }
+
+.ip-card-body { padding: 1rem 1.2rem; }
+
+.ip-stat-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.ip-stat { text-align: center; }
+
+.ip-stat-num {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+}
+
+.ip-stat-lbl {
+    font-size: 0.68rem;
+    color: var(--text3);
+    margin-top: 0.15rem;
+    letter-spacing: 0.05em;
+}
+
+.stat-red   { color: var(--red); }
+.stat-amber { color: var(--amber); }
+.stat-green { color: var(--green); }
+
+.ip-isp {
+    font-size: 0.78rem;
+    color: var(--text2);
+    margin-bottom: 0.3rem;
+}
+
+.ip-last {
+    font-size: 0.72rem;
+    color: var(--text3);
+}
+
+.ip-geo { font-size: 0.85rem; color: var(--text2); }
+.muted  { color: var(--text3); font-style: italic; }
