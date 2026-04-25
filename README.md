@@ -4,7 +4,7 @@ A web-based cybersecurity tool that analyzes raw email headers to detect
 phishing, spoofing, and email authentication failures.
 
 ## Live Demo
-[Coming soon — link after deployment]
+[Live Demo](https://email-header-analyzer-nw4o.onrender.com)
 
 ## Features
 - **SPF / DMARC / DKIM** validation via live DNS lookups
