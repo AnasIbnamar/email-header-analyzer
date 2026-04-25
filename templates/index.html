@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Header Analyzer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Email Header Analyzer</h1>
+            <p class="subtitle">Detect phishing, spoofing, and email authentication issues</p>
+        </header>
+
+        {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+
+        <div class="card">
+            <h2>Paste Email Headers</h2>
+            <p class="hint">
+                In Gmail: open email → three dots → <strong>Show original</strong> → copy everything.<br>
+                In Outlook: open email → File → Properties → copy from "Internet headers".
+            </p>
+            <form method="POST" action="/analyze">
+                <textarea
+                    name="headers"
+                    placeholder="Paste raw email headers here..."
+                    rows="16"
+                    required
+                ></textarea>
+                <button type="submit">Analyze Headers</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

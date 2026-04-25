@@ -1,0 +1,223 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f6f9;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+header {
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+
+.subtitle {
+    color: #555;
+    margin-top: 0.3rem;
+}
+
+.back-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    color: #4361ee;
+    text-decoration: none;
+    font-size: 0.95rem;
+}
+
+.card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1a1a2e;
+}
+
+.hint {
+    font-size: 0.88rem;
+    color: #666;
+    margin-bottom: 1rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.9rem;
+    border: 1.5px solid #dde1e7;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+    background: #fafafa;
+    color: #1a1a2e;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #4361ee;
+}
+
+button[type="submit"] {
+    margin-top: 1rem;
+    padding: 0.75rem 2rem;
+    background: #4361ee;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+button[type="submit"]:hover { background: #3451d1; }
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 7px;
+    margin-bottom: 0.75rem;
+    font-size: 0.93rem;
+}
+
+.alert-danger {
+    background: #fff0f0;
+    border-left: 4px solid #e63946;
+    color: #c1121f;
+}
+
+/* Risk Banner */
+.risk-banner {
+    border-radius: 10px;
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.risk-high  { background: #fff0f0; border-left: 6px solid #e63946; }
+.risk-medium{ background: #fff8ec; border-left: 6px solid #f4a261; }
+.risk-low   { background: #f0fff4; border-left: 6px solid #2dc653; }
+
+.risk-number {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #1a1a2e;
+}
+
+.risk-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Authentication Grid */
+.auth-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.auth-box {
+    background: #f8f9fc;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.auth-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #888;
+    margin-bottom: 0.4rem;
+}
+
+.auth-status {
+    font-size: 1rem;
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+.status-good { background: #e8f5e9; color: #2e7d32; }
+.status-warn { background: #fff8e1; color: #f57f17; }
+.status-bad  { background: #ffebee; color: #c62828; }
+
+.auth-record {
+    font-size: 0.75rem;
+    color: #666;
+    word-break: break-all;
+    margin-top: 0.4rem;
+}
+
+/* Delivery Chain */
+.hop {
+    border-left: 3px solid #4361ee;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.75rem;
+    background: #f8f9fc;
+    border-radius: 0 8px 8px 0;
+}
+
+.hop-number {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #4361ee;
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+}
+
+.hop-detail {
+    font-size: 0.88rem;
+    color: #444;
+}
+
+/* Geolocation */
+.geo-entry {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #eee;
+    font-size: 0.92rem;
+}
+
+.geo-entry:last-child { border-bottom: none; }
+
+/* Info Table */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.info-table td {
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+}
+
+.info-table td:first-child {
+    width: 130px;
+    color: #888;
+    font-weight: 500;
+    white-space: nowrap;
+}
