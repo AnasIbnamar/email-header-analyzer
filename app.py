@@ -30,3 +30,9 @@ def test_api():
     if key:
         return f"Key found: {key[:8]}..."
     return "No key found"
+
+@app.route("/test-abuse")
+def test_abuse():
+    from analyzer import check_abuseipdb
+    result = check_abuseipdb("80.82.77.33")
+    return str(result)
